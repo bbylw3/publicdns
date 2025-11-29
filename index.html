@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公共 DNS 大全 - VS Code Style</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #1e1e1e;
+            /* VS Code Editor Background */
+            color: #cccccc;
+            /* VS Code Default Text */
+        }
+
+        /* VS Code Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #424242;
+            border-radius: 0px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4f4f4f;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        /* Utilities */
+        .font-code {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        /* VS Code Blue Accent */
+        .vscode-blue {
+            color: #007acc;
+        }
+
+        .bg-vscode-blue {
+            background-color: #007acc;
+        }
+
+        .border-vscode-blue {
+            border-color: #007acc;
+        }
+
+        /* VS Code Syntax Colors */
+        .syntax-string {
+            color: #ce9178;
+        }
+
+        /* Orange */
+        .syntax-keyword {
+            color: #569cd6;
+        }
+
+        /* Blue */
+        .syntax-number {
+            color: #b5cea8;
+        }
+
+        /* Light Green */
+        .syntax-comment {
+            color: #6a9955;
+        }
+
+        /* Green */
+        .syntax-class {
+            color: #4ec9b0;
+        }
+
+        /* Teal */
+
+        .card-hover:hover {
+            border-color: #007acc;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // DNS 数据源
+        const dnsData = [
+            // 国内 DNS
+            {
+                id: 1,
+                name: "AliDNS",
+                provider: "Alibaba",
+                tags: ["国内首选", "稳定"],
+                category: "domestic",
+                ipv4_1: "223.5.5.5",
+                ipv4_2: "223.6.6.6",
+                ipv6_1: "2400:3200::1",
+                ipv6_2: "2400:3200:baba::1",
+                desc: "国内用户首选，解析速度快，电商访问优化。"
+            },
+            {
+                id: 2,
+                name: "DNSPod",
+                provider: "Tencent",
+                tags: ["防劫持", "游戏优化"],
+                category: "domestic",
+                ipv4_1: "119.29.29.29",
+                ipv4_2: "182.254.116.116",
+                ipv6_1: "2402:4e00::",
+                ipv6_2: null,
+                desc: "腾讯云出品，针对游戏和社交应用有较好的优化。"
+            },
+            {
+                id: 12,
+                name: "CNNIC SDNS",
+                provider: "CNNIC",
+                tags: ["国家队", "IPv6"],
+                category: "domestic",
+                ipv4_1: "1.2.4.8",
+                ipv4_2: "210.2.4.8",
+                ipv6_1: "2001:dc7:1000::1",
+                ipv6_2: null,
+                desc: "中国互联网络信息中心(CNNIC)提供，权威稳定。"
+            },
+            {
+                id: 13,
+                name: "OneDNS",
+                provider: "OneDNS",
+                tags: ["拦截", "纯净"],
+                category: "domestic",
+                ipv4_1: "117.50.11.11",
+                ipv4_2: "117.50.10.10",
+                ipv6_1: "2a07:d880:4::1111",
+                ipv6_2: "2a07:d880:4::1010",
+                desc: "提供恶意网站拦截和广告过滤功能，支持双栈 IPv6。"
+            },
+            {
+                id: 3,
+                name: "114 DNS",
+                provider: "114DNS",
+                tags: ["老牌", "电信联通"],
+                category: "domestic",
+                ipv4_1: "114.114.114.114",
+                ipv4_2: "114.114.115.115",
+                ipv6_1: null,
+                ipv6_2: null,
+                desc: "国内老牌公共 DNS，兼容性好，解析成功率高。"
+            },
+            {
+                id: 4,
+                name: "360 Secure",
+                provider: "360",
+                tags: ["安全", "防钓鱼"],
+                category: "security",
+                ipv4_1: "101.226.4.6",
+                ipv4_2: "218.30.118.6",
+                ipv6_1: null,
+                ipv6_2: null,
+                desc: "主打安全防护，自动拦截恶意网站和钓鱼网站。"
+            },
+            {
+                id: 5,
+                name: "Baidu DNS",
+                provider: "Baidu",
+                tags: ["纯净", "IPv6"],
+                category: "domestic",
+                ipv4_1: "180.76.76.76",
+                ipv4_2: null,
+                ipv6_1: "2400:da00::6666",
+                ipv6_2: null,
+                desc: "百度推出的公共 DNS，不仅解析快，还具备病毒防护功能。"
+            },
+            {
+                id: 9,
+                name: "Volcengine",
+                provider: "ByteDance",
+                tags: ["抖音", "头条"],
+                category: "domestic",
+                ipv4_1: "180.184.1.1",
+                ipv4_2: "180.184.2.2",
+                ipv6_1: null,
+                ipv6_2: null,
+                desc: "字节跳动推出，适合访问抖音、头条等字节系产品。"
+            },
+
+            // 国际 DNS
+            {
+                id: 6,
+                name: "Google Public",
+                provider: "Google",
+                tags: ["全球通用", "标准"],
+                category: "international",
+                ipv4_1: "8.8.8.8",
+                ipv4_2: "8.8.4.4",
+                ipv6_1: "2001:4860:4860::8888",
+                ipv6_2: "2001:4860:4860::8844",
+                desc: "全球最著名的公共 DNS，解析准确，但在国内可能延迟较高。"
+            },
+            {
+                id: 7,
+                name: "Cloudflare",
+                provider: "Cloudflare",
+                tags: ["隐私", "极速"],
+                category: "international",
+                ipv4_1: "1.1.1.1",
+                ipv4_2: "1.0.0.1",
+                ipv6_1: "2606:4700:4700::1111",
+                ipv6_2: "2606:4700:4700::1001",
+                desc: "承诺不记录用户 IP，号称全球最快的公共 DNS 之一。"
+            },
+            {
+                id: 8,
+                name: "OpenDNS",
+                provider: "Cisco",
+                tags: ["老牌", "稳定"],
+                category: "international",
+                ipv4_1: "208.67.222.222",
+                ipv4_2: "208.67.220.220",
+                ipv6_1: "2620:119:35::35",
+                ipv6_2: "2620:119:53::53",
+                desc: "Cisco 旗下，全球最早的公共 DNS 之一，提供基础的安全防护和钓鱼拦截。"
+            },
+            {
+                id: 10,
+                name: "AdGuard",
+                provider: "AdGuard",
+                tags: ["去广告", "拦截"],
+                category: "security",
+                ipv4_1: "94.140.14.14",
+                ipv4_2: "94.140.15.15",
+                ipv6_1: "2a10:50c0::ad1:ff",
+                ipv6_2: "2a10:50c0::ad2:ff",
+                desc: "默认拦截广告、跟踪器和钓鱼网站的 DNS 服务。"
+            },
+            {
+                id: 11,
+                name: "Quad9",
+                provider: "Quad9",
+                tags: ["安全", "隐私"],
+                category: "security",
+                ipv4_1: "9.9.9.9",
+                ipv4_2: "149.112.112.112",
+                ipv6_1: "2620:fe::fe",
+                ipv6_2: "2620:fe::9",
+                desc: "与 IBM 和 Global Cyber Alliance 合作，主打恶意域名拦截。"
+            }
+        ];
+
+        const tutorials = {
+            windows: "1. 打开「控制面板」 > 「网络和共享中心」。\n2. 点击当前连接的网络，选择「属性」。\n3. 双击「Internet 协议版本 4 (TCP/IPv4)」。\n4. 选择「使用下面的 DNS 服务器地址」，填入 IP。",
+            mac: "1. 打开「系统设置」 > 「网络」。\n2. 选择当前网络，点击「详细信息」。\n3. 切换到「DNS」标签页。\n4. 点击「+」添加新的 DNS 服务器。",
+            ios: "1. 进入「设置」 > 「无线局域网」。\n2. 点击已连接 Wi-Fi 右侧的「i」图标。\n3. 向下滑动找到「配置 DNS」，改为「手动」。\n4. 添加服务器地址。",
+            android: "1. 进入「设置」 > 「网络和互联网」。\n2. 选择「高级」 > 「私人 DNS」。\n3. 选择「私人 DNS 提供商主机名」并输入（注意：原生安卓通常需要 DoT 主机名，而非 IP）。"
+        };
+
+        const Icon = ({ name, size = 18, className }) => {
+            React.useEffect(() => {
+                lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} width={size} height={size} className={className}></i>;
+        };
+
+        const Toast = ({ message, visible }) => {
+            if (!visible) return null;
+            return (
+                <div className="fixed bottom-6 right-6 bg-[#252526] border border-[#007acc] text-white px-4 py-3 rounded shadow-2xl flex items-center gap-3 animate-fade-in z-50">
+                    <Icon name="info" className="text-[#007acc]" />
+                    <span className="text-sm">{message}</span>
+                </div>
+            );
+        };
+
+        const Modal = ({ isOpen, onClose, title, children }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-40 p-4" onClick={onClose}>
+                    <div className="bg-[#252526] border border-[#454545] rounded-md shadow-2xl max-w-2xl w-full flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-4 border-b border-[#333333]">
+                            <h2 className="text-lg font-medium text-[#cccccc] flex items-center gap-2">
+                                <Icon name="terminal" size={18} className="text-[#007acc]" />
+                                {title}
+                            </h2>
+                            <button onClick={onClose} className="text-[#858585] hover:text-white transition">
+                                <Icon name="x" size={20} />
+                            </button>
+                        </div>
+                        <div className="p-0 overflow-y-auto custom-scrollbar">
+                            {children}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        function App() {
+            const [filter, setFilter] = useState("all");
+            const [search, setSearch] = useState("");
+            const [toast, setToast] = useState({ show: false, msg: "" });
+            const [modalOpen, setModalOpen] = useState(false);
+            const [activeTab, setActiveTab] = useState("windows");
+
+            const showToast = (msg) => {
+                setToast({ show: true, msg });
+                setTimeout(() => setToast({ show: false, msg: "" }), 2500);
+            };
+
+            const copyToClipboard = (text) => {
+                if (!text) return;
+                const textarea = document.createElement("textarea");
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast(`已复制到剪贴板: ${text}`);
+                } catch (err) {
+                    showToast("复制失败");
+                }
+                document.body.removeChild(textarea);
+            };
+
+            const filteredData = useMemo(() => {
+                return dnsData.filter(item => {
+                    const matchesCategory = filter === "all"
+                        ? true
+                        : filter === "ipv6"
+                            ? (item.ipv6_1 !== null)
+                            : (filter === "domestic" && item.category === "domestic") ||
+                            (filter === "international" && item.category === "international") ||
+                            (filter === "security" && item.category === "security");
+
+                    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) ||
+                        item.desc.toLowerCase().includes(search.toLowerCase());
+                    return matchesCategory && matchesSearch;
+                });
+            }, [filter, search]);
+
+            const categories = [
+                { id: "all", label: "全部", icon: "layers" },
+                { id: "domestic", label: "国内加速", icon: "zap" },
+                { id: "international", label: "国际畅通", icon: "globe" },
+                { id: "security", label: "安全防护", icon: "shield" },
+                { id: "ipv6", label: "IPv6", icon: "network" },
+            ];
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    {/* VS Code Activity Bar + Sidebar concept simplified to Header */}
+                    <div className="bg-[#252526] border-b border-[#333333] px-4 py-3 sticky top-0 z-30 shadow-md">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 w-full md:w-auto">
+                                <div className="bg-[#007acc] p-1.5 rounded-sm">
+                                    <Icon name="server" size={20} className="text-white" />
+                                </div>
+                                <h1 className="text-lg font-bold tracking-wide text-[#cccccc]">
+                                    DNS<span className="text-[#007acc]">_HUB</span>
+                                </h1>
+                            </div>
+
+                            {/* Search (Command Palette Style) */}
+                            <div className="relative w-full md:w-96 group">
+                                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#858585] group-focus-within:text-[#007acc]">
+                                    <Icon name="search" size={16} />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="搜索 DNS 服务商..."
+                                    className="w-full bg-[#3c3c3c] text-[#cccccc] pl-9 pr-3 py-1.5 text-sm rounded-sm border border-[#3c3c3c] focus:outline-none focus:border-[#007acc] focus:ring-1 focus:ring-[#007acc] placeholder-[#858585] transition-all"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                />
+                            </div>
+
+                            <button
+                                onClick={() => setModalOpen(true)}
+                                className="hidden md:flex items-center gap-2 text-xs text-[#cccccc] hover:text-white px-3 py-1.5 hover:bg-[#3c3c3c] rounded-sm transition"
+                            >
+                                <Icon name="book-open" size={14} />
+                                <span className="font-code">README.md</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Main Content Area */}
+                    <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6">
+
+                        {/* Tabs / Filter Bar */}
+                        <div className="flex overflow-x-auto pb-4 gap-1 mb-2 scrollbar-hide border-b border-[#333333]">
+                            {categories.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setFilter(cat.id)}
+                                    className={`flex items-center gap-2 px-4 py-2 text-sm transition-all border-t-2 ${filter === cat.id
+                                            ? "bg-[#1e1e1e] text-white border-[#007acc]"
+                                            : "bg-transparent text-[#969696] border-transparent hover:text-[#cccccc] hover:bg-[#2a2d2e]"
+                                        }`}
+                                >
+                                    <Icon name={cat.icon} size={14} />
+                                    {cat.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Breadcrumbs / Info */}
+                        <div className="text-xs font-code text-[#6a9955] mb-6 flex items-center gap-2">
+                            <span>src</span>
+                            <span>/</span>
+                            <span>providers</span>
+                            <span>/</span>
+                            <span>{filter}.json</span>
+                            <span className="text-[#858585] ml-2">// 找到 {filteredData.length} 项</span>
+                        </div>
+
+                        {/* Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {filteredData.map(dns => (
+                                <div key={dns.id} className="bg-[#252526] p-4 rounded-sm border border-[#333333] card-hover transition-all duration-200 group relative flex flex-col h-full">
+                                    {/* Decoration Line */}
+                                    <div className={`absolute top-0 left-0 w-1 h-full rounded-l-sm ${dns.category === 'domestic' ? 'bg-[#dcdcaa]' :
+                                            dns.category === 'security' ? 'bg-[#c586c0]' : 'bg-[#569cd6]'
+                                        }`}></div>
+
+                                    <div className="pl-3 mb-4 flex justify-between items-start">
+                                        <div>
+                                            <h3 className="text-lg font-medium text-[#d4d4d4] group-hover:text-white">
+                                                {dns.name}
+                                            </h3>
+                                            <div className="flex gap-2 mt-2 flex-wrap">
+                                                {dns.tags.map(tag => (
+                                                    <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#3c3c3c] text-[#4ec9b0] font-code border border-[#454545]">
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="text-[#858585]">
+                                            <Icon name={dns.category === 'domestic' ? 'zap' : dns.category === 'security' ? 'shield' : 'globe'} size={18} />
+                                        </div>
+                                    </div>
+
+                                    <div className="pl-3 mb-6 flex-grow">
+                                        <p className="text-sm text-[#858585] leading-relaxed">
+                                            <span className="text-[#569cd6] font-code mr-1">const</span>
+                                            <span className="text-[#dcdcaa] font-code mr-1">desc</span>
+                                            <span className="text-[#d4d4d4] font-code mr-1">=</span>
+                                            <span className="syntax-string">"{dns.desc}"</span>;
+                                        </p>
+                                    </div>
+
+                                    <div className="pl-3 space-y-3">
+                                        {/* IPv4 Block */}
+                                        <div className="space-y-1">
+                                            <div className="flex items-center justify-between text-xs text-[#858585] mb-1">
+                                                <span className="font-code">IPv4</span>
+                                            </div>
+                                            {[dns.ipv4_1, dns.ipv4_2].filter(Boolean).map((ip, idx) => (
+                                                <div key={idx} className="flex items-center bg-[#1e1e1e] border border-[#3c3c3c] rounded-sm group/ip hover:border-[#569cd6] transition-colors">
+                                                    <div className="px-3 py-1.5 font-code text-sm text-[#b5cea8] flex-grow">
+                                                        {ip}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => copyToClipboard(ip)}
+                                                        className="px-3 py-1.5 text-[#858585] hover:text-white hover:bg-[#333333] border-l border-[#3c3c3c] transition-colors"
+                                                        title="复制"
+                                                    >
+                                                        <Icon name="copy" size={14} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* IPv6 Block */}
+                                        {(dns.ipv6_1 || dns.ipv6_2) && (
+                                            <div className="space-y-1 mt-2">
+                                                <div className="flex items-center justify-between text-xs text-[#858585] mb-1">
+                                                    <span className="font-code">IPv6</span>
+                                                </div>
+                                                {[dns.ipv6_1, dns.ipv6_2].filter(Boolean).map((ip, idx) => (
+                                                    <div key={idx} className="flex items-center bg-[#1e1e1e] border border-[#3c3c3c] rounded-sm group/ip hover:border-[#569cd6] transition-colors mb-1 last:mb-0">
+                                                        <div className="px-3 py-1.5 font-code text-[11px] text-[#4ec9b0] flex-grow truncate" title={ip}>
+                                                            {ip}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => copyToClipboard(ip)}
+                                                            className="px-3 py-1.5 text-[#858585] hover:text-white hover:bg-[#333333] border-l border-[#3c3c3c] flex-shrink-0 transition-colors"
+                                                            title="复制"
+                                                        >
+                                                            <Icon name="copy" size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {filteredData.length === 0 && (
+                            <div className="flex flex-col items-center justify-center py-20 text-[#6b6b6b]">
+                                <Icon name="search-x" size={48} className="mb-4 opacity-50" />
+                                <p className="text-lg">工作区中未找到结果</p>
+                                <button onClick={() => { setFilter('all'); setSearch('') }} className="mt-4 text-[#007acc] hover:underline text-sm font-code">
+                                    重置筛选条件
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer / Status Bar */}
+                    <div className="bg-[#007acc] text-white text-xs py-1 px-4 flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <span className="flex items-center gap-1 hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer">
+                                <Icon name="git-branch" size={12} />
+                                <span>main</span>
+                            </span>
+                            <span className="hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer">
+                                0 errors, 0 warnings
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <span className="hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer">Ln {filteredData.length}, Col 1</span>
+                            <span className="hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer">UTF-8</span>
+                            <span className="hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer">JavaScript React</span>
+                            <Icon name="bell" size={12} className="hover:bg-white/10 rounded cursor-pointer" />
+                        </div>
+                    </div>
+
+                    <Toast message={toast.msg} visible={toast.show} />
+
+                    <Modal
+                        isOpen={modalOpen}
+                        onClose={() => setModalOpen(false)}
+                        title="Configuration_Guide.md"
+                    >
+                        <div className="flex bg-[#252526] border-b border-[#333333]">
+                            {Object.keys(tutorials).map(key => (
+                                <button
+                                    key={key}
+                                    onClick={() => setActiveTab(key)}
+                                    className={`px-6 py-3 text-sm font-code border-t-2 transition-colors ${activeTab === key
+                                            ? "bg-[#1e1e1e] text-[#d4d4d4] border-[#007acc]"
+                                            : "bg-[#2d2d2d] text-[#858585] border-transparent hover:bg-[#2a2d2e]"
+                                        }`}
+                                >
+                                    {key.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="p-6 bg-[#1e1e1e] min-h-[300px]">
+                            <div className="font-code text-sm leading-7">
+                                {tutorials[activeTab].split('\n').map((line, i) => (
+                                    <div key={i} className="flex">
+                                        <span className="text-[#858585] w-8 select-none text-right mr-4">{i + 1}</span>
+                                        <span className="text-[#cccccc] whitespace-pre-wrap">{line}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="mt-8 pt-4 border-t border-[#333333]">
+                                <p className="text-[#6a9955] font-code text-xs">
+                                    // Tip: Run `ipconfig /flushdns` in terminal after changes.
+                                </p>
+                            </div>
+                        </div>
+                    </Modal>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
