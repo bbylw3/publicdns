@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="公共 DNS 大全 (Public DNS Hub) - 极客风格的 DNS 聚合工具，VS Code 主题设计，支持一键复制和教程。">
+    <meta name="keywords" content="DNS, 公共DNS, Public DNS, VS Code Theme, DNS教程, 阿里DNS, 腾讯DNS, Google DNS">
     <title>公共 DNS 大全 - VS Code Style</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,112 +18,102 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        body {
-            font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #1e1e1e;
-            /* VS Code Editor Background */
-            color: #cccccc;
-            /* VS Code Default Text */
+        :root {
+            --bg-root: #1e1e1e;
+            --bg-sidebar: #252526;
+            --bg-activity: #333333;
+            --border-color: #333333;
+            --accent: #007acc;
+            --text-primary: #cccccc;
+            --text-secondary: #858585;
         }
 
-        /* VS Code Scrollbar */
-        ::-webkit-scrollbar {
+        body {
+            font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-root);
+            color: var(--text-primary);
+            margin: 0;
+            overflow: hidden; /* App manages scrolling */
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
             width: 10px;
             height: 10px;
         }
 
-        ::-webkit-scrollbar-track {
-            background: #1e1e1e;
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: var(--bg-root);
         }
 
-        ::-webkit-scrollbar-thumb {
+        .custom-scrollbar::-webkit-scrollbar-thumb {
             background: #424242;
-            border-radius: 0px;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #4f4f4f;
         }
 
-        /* Animations */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(5px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        /* Loading Spinner */
+        .initial-loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: var(--text-secondary);
+            font-family: monospace;
         }
-
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-out forwards;
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--bg-sidebar);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Syntax Highlighting Classes */
+        .syntax-string { color: #ce9178; }
+        .syntax-keyword { color: #569cd6; }
+        .syntax-number { color: #b5cea8; }
+        .syntax-comment { color: #6a9955; }
+        .syntax-class { color: #4ec9b0; }
+        .syntax-variable { color: #9cdcfe; }
 
         /* Utilities */
-        .font-code {
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-        }
-
-        /* VS Code Blue Accent */
-        .vscode-blue {
-            color: #007acc;
-        }
-
-        .bg-vscode-blue {
-            background-color: #007acc;
-        }
-
-        .border-vscode-blue {
-            border-color: #007acc;
-        }
-
-        /* VS Code Syntax Colors */
-        .syntax-string {
-            color: #ce9178;
-        }
-
-        /* Orange */
-        .syntax-keyword {
-            color: #569cd6;
-        }
-
-        /* Blue */
-        .syntax-number {
-            color: #b5cea8;
-        }
-
-        /* Light Green */
-        .syntax-comment {
-            color: #6a9955;
-        }
-
-        /* Green */
-        .syntax-class {
-            color: #4ec9b0;
-        }
-
-        /* Teal */
-
+        .font-code { font-family: 'Consolas', 'Monaco', 'Courier New', monospace; }
         .card-hover:hover {
-            border-color: #007acc;
+            border-color: var(--accent);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Search Highlight */
+        .highlight-text {
+            background-color: rgba(255, 255, 0, 0.2);
+            color: white;
+            font-weight: bold;
         }
     </style>
 </head>
 
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div class="initial-loader">
+            <div class="spinner"></div>
+            <p>Initializing VS Code Environment...</p>
+        </div>
+    </div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useCallback } = React;
 
-        // DNS 数据源
-        const dnsData = [
-            // 国内 DNS
-            {
+        // --- DATA SOURCE ---
+        const DNS_DATA = [
+             // 国内 DNS
+             {
                 id: 1,
                 name: "AliDNS",
                 provider: "Alibaba",
@@ -281,45 +273,222 @@
             }
         ];
 
-        const tutorials = {
+        const CATEGORIES = [
+            { id: "all", label: "全部", icon: "layers" },
+            { id: "domestic", label: "国内加速", icon: "zap" },
+            { id: "international", label: "国际畅通", icon: "globe" },
+            { id: "security", label: "安全防护", icon: "shield" },
+            { id: "ipv6", label: "IPv6", icon: "network" },
+        ];
+
+        const TUTORIALS = {
             windows: "1. 打开「控制面板」 > 「网络和共享中心」。\n2. 点击当前连接的网络，选择「属性」。\n3. 双击「Internet 协议版本 4 (TCP/IPv4)」。\n4. 选择「使用下面的 DNS 服务器地址」，填入 IP。",
             mac: "1. 打开「系统设置」 > 「网络」。\n2. 选择当前网络，点击「详细信息」。\n3. 切换到「DNS」标签页。\n4. 点击「+」添加新的 DNS 服务器。",
             ios: "1. 进入「设置」 > 「无线局域网」。\n2. 点击已连接 Wi-Fi 右侧的「i」图标。\n3. 向下滑动找到「配置 DNS」，改为「手动」。\n4. 添加服务器地址。",
             android: "1. 进入「设置」 > 「网络和互联网」。\n2. 选择「高级」 > 「私人 DNS」。\n3. 选择「私人 DNS 提供商主机名」并输入（注意：原生安卓通常需要 DoT 主机名，而非 IP）。"
         };
 
+        // --- UTILS ---
         const Icon = ({ name, size = 18, className }) => {
-            React.useEffect(() => {
-                lucide.createIcons();
-            }, [name]);
+            useEffect(() => { lucide.createIcons(); }, [name]);
             return <i data-lucide={name} width={size} height={size} className={className}></i>;
         };
 
-        const Toast = ({ message, visible }) => {
-            if (!visible) return null;
+        // Helper to highlight search text
+        const HighlightedText = ({ text, highlight }) => {
+            if (!highlight) return <span>{text}</span>;
+            const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
             return (
-                <div className="fixed bottom-6 right-6 bg-[#252526] border border-[#007acc] text-white px-4 py-3 rounded shadow-2xl flex items-center gap-3 animate-fade-in z-50">
-                    <Icon name="info" className="text-[#007acc]" />
-                    <span className="text-sm">{message}</span>
-                </div>
+                <span>
+                    {parts.map((part, i) => 
+                        part.toLowerCase() === highlight.toLowerCase() ? 
+                        <span key={i} className="highlight-text">{part}</span> : part
+                    )}
+                </span>
             );
         };
 
+        // --- COMPONENTS ---
+
+        const StatusBar = ({ count, errorCount = 0 }) => (
+             <div className="bg-[#007acc] text-white text-xs py-1 px-4 flex justify-between items-center select-none">
+                <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1 hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer transition">
+                        <Icon name="git-branch" size={12} />
+                        <span>main</span>
+                    </span>
+                    <span className="hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer transition">
+                        {errorCount} errors, 0 warnings
+                    </span>
+                </div>
+                <div className="flex items-center gap-4">
+                    <span className="hidden sm:inline hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer transition">
+                        Ln {count}, Col 1
+                    </span>
+                    <span className="hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer transition">UTF-8</span>
+                    <span className="hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer transition">JavaScript React</span>
+                    <Icon name="bell" size={12} className="hover:bg-white/10 rounded cursor-pointer transition" />
+                </div>
+            </div>
+        );
+
+        const ActivityBar = () => (
+            <div className="hidden md:flex flex-col w-12 bg-[#333333] h-full items-center py-4 gap-6 border-r border-[#252526]">
+                <div className="cursor-pointer text-white border-l-2 border-white pl-3 pr-3 opacity-100">
+                    <Icon name="files" size={24} />
+                </div>
+                <div className="cursor-pointer text-[#858585] hover:text-white transition px-3">
+                    <Icon name="search" size={24} />
+                </div>
+                <div className="cursor-pointer text-[#858585] hover:text-white transition px-3">
+                    <Icon name="git-branch" size={24} />
+                </div>
+                <div className="cursor-pointer text-[#858585] hover:text-white transition px-3">
+                    <Icon name="bug" size={24} />
+                </div>
+                <div className="flex-grow"></div>
+                <div className="cursor-pointer text-[#858585] hover:text-white transition px-3 mb-2">
+                    <Icon name="settings" size={24} />
+                </div>
+            </div>
+        );
+
+        const CopyButton = ({ text, onCopy }) => {
+            const [copied, setCopied] = useState(false);
+
+            const handleCopy = () => {
+                onCopy(text);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+
+            return (
+                <button
+                    onClick={handleCopy}
+                    className={`px-3 py-1.5 border-l border-[#3c3c3c] transition-all duration-200 flex items-center justify-center w-10 ${copied ? "text-green-400 bg-[#1e1e1e]" : "text-[#858585] hover:text-white hover:bg-[#333333]"}`}
+                    title={copied ? "已复制" : "复制"}
+                >
+                    <Icon name={copied ? "check" : "copy"} size={14} />
+                </button>
+            );
+        };
+
+        const DNSCard = React.memo(({ dns, onCopy, highlight }) => {
+            const categoryColor = dns.category === 'domestic' ? 'bg-[#dcdcaa]' :
+                                  dns.category === 'security' ? 'bg-[#c586c0]' : 'bg-[#569cd6]';
+            
+            const iconName = dns.category === 'domestic' ? 'zap' : dns.category === 'security' ? 'shield' : 'globe';
+
+            return (
+                <div className="bg-[#252526] p-0 rounded-sm border border-[#333333] card-hover transition-all duration-200 group relative flex flex-col h-full overflow-hidden">
+                    {/* Category Indicator Strip */}
+                    <div className={`absolute top-0 left-0 w-1 h-full ${categoryColor}`}></div>
+
+                    {/* Header */}
+                    <div className="p-4 pb-2 pl-5 flex justify-between items-start">
+                        <div>
+                            <h3 className="text-lg font-medium text-[#d4d4d4] group-hover:text-white flex items-center gap-2">
+                                <HighlightedText text={dns.name} highlight={highlight} />
+                            </h3>
+                            <div className="flex gap-2 mt-2 flex-wrap">
+                                {dns.tags.map(tag => (
+                                    <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#3c3c3c] text-[#4ec9b0] font-code border border-[#454545] select-none">
+                                        {tag}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="text-[#858585] opacity-50 group-hover:opacity-100 transition-opacity">
+                            <Icon name={iconName} size={18} />
+                        </div>
+                    </div>
+
+                    {/* Code / Description Area */}
+                    <div className="pl-5 pr-4 py-2 flex-grow font-code text-sm">
+                        <div className="flex text-[#858585] leading-relaxed opacity-90">
+                             {/* Line Numbers */}
+                             <div className="flex flex-col text-right pr-3 select-none border-r border-[#3c3c3c] mr-3 text-[#5a5a5a] text-[10px] pt-1 leading-relaxed">
+                                <span>1</span>
+                                <span>2</span>
+                            </div>
+                            <div className="py-0.5">
+                                <div>
+                                    <span className="syntax-keyword">const</span>{" "}
+                                    <span className="syntax-variable">info</span>{" "}
+                                    <span className="text-[#d4d4d4]">=</span>{" "}
+                                    <span className="text-[#d4d4d4]">{`{`}</span>
+                                </div>
+                                <div className="pl-4">
+                                    <span className="syntax-keyword">desc</span>:{" "}
+                                    <span className="syntax-string">"
+                                        <HighlightedText text={dns.desc} highlight={highlight} />
+                                    "</span>
+                                </div>
+                                <div><span className="text-[#d4d4d4]">{`}`}</span>;</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* IP List */}
+                    <div className="p-4 pl-5 space-y-3 bg-[#252526]">
+                        {/* IPv4 */}
+                        <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[10px] text-[#858585] mb-1 uppercase tracking-wider font-bold">
+                                <span>IPv4</span>
+                            </div>
+                            {[dns.ipv4_1, dns.ipv4_2].filter(Boolean).map((ip, idx) => (
+                                <div key={idx} className="flex items-center bg-[#1e1e1e] border border-[#3c3c3c] rounded-sm group/ip hover:border-[#569cd6] transition-colors">
+                                    <div className="px-3 py-1.5 font-code text-sm text-[#b5cea8] flex-grow">
+                                        {ip}
+                                    </div>
+                                    <CopyButton text={ip} onCopy={onCopy} />
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* IPv6 */}
+                        {(dns.ipv6_1 || dns.ipv6_2) && (
+                            <div className="space-y-1 mt-2">
+                                <div className="flex items-center justify-between text-[10px] text-[#858585] mb-1 uppercase tracking-wider font-bold">
+                                    <span>IPv6</span>
+                                </div>
+                                {[dns.ipv6_1, dns.ipv6_2].filter(Boolean).map((ip, idx) => (
+                                    <div key={idx} className="flex items-center bg-[#1e1e1e] border border-[#3c3c3c] rounded-sm group/ip hover:border-[#569cd6] transition-colors mb-1 last:mb-0">
+                                        <div className="px-3 py-1.5 font-code text-[10px] text-[#4ec9b0] flex-grow truncate" title={ip}>
+                                            {ip}
+                                        </div>
+                                        <CopyButton text={ip} onCopy={onCopy} />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        });
+
         const Modal = ({ isOpen, onClose, title, children }) => {
             if (!isOpen) return null;
+            // Close on Esc
+            useEffect(() => {
+                const handleEsc = (e) => e.key === 'Escape' && onClose();
+                window.addEventListener('keydown', handleEsc);
+                return () => window.removeEventListener('keydown', handleEsc);
+            }, [onClose]);
+
             return (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-40 p-4" onClick={onClose}>
-                    <div className="bg-[#252526] border border-[#454545] rounded-md shadow-2xl max-w-2xl w-full flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between p-4 border-b border-[#333333]">
-                            <h2 className="text-lg font-medium text-[#cccccc] flex items-center gap-2">
-                                <Icon name="terminal" size={18} className="text-[#007acc]" />
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={onClose}>
+                    <div className="bg-[#252526] border border-[#454545] rounded-md shadow-2xl max-w-3xl w-full flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-[#333333] bg-[#2d2d2d]">
+                            <h2 className="text-sm font-medium text-[#cccccc] flex items-center gap-2">
+                                <Icon name="book-open" size={16} className="text-[#007acc]" />
                                 {title}
                             </h2>
                             <button onClick={onClose} className="text-[#858585] hover:text-white transition">
-                                <Icon name="x" size={20} />
+                                <Icon name="x" size={18} />
                             </button>
                         </div>
-                        <div className="p-0 overflow-y-auto custom-scrollbar">
+                        <div className="overflow-y-auto custom-scrollbar bg-[#1e1e1e]">
                             {children}
                         </div>
                     </div>
@@ -327,35 +496,29 @@
             );
         };
 
+        // --- MAIN APP ---
+
         function App() {
             const [filter, setFilter] = useState("all");
             const [search, setSearch] = useState("");
-            const [toast, setToast] = useState({ show: false, msg: "" });
             const [modalOpen, setModalOpen] = useState(false);
-            const [activeTab, setActiveTab] = useState("windows");
+            const [tutorialTab, setTutorialTab] = useState("windows");
 
-            const showToast = (msg) => {
-                setToast({ show: true, msg });
-                setTimeout(() => setToast({ show: false, msg: "" }), 2500);
-            };
-
-            const copyToClipboard = (text) => {
+            const copyToClipboard = useCallback((text) => {
                 if (!text) return;
-                const textarea = document.createElement("textarea");
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                try {
+                navigator.clipboard.writeText(text).catch(() => {
+                    // Fallback
+                    const textarea = document.createElement("textarea");
+                    textarea.value = text;
+                    document.body.appendChild(textarea);
+                    textarea.select();
                     document.execCommand('copy');
-                    showToast(`已复制到剪贴板: ${text}`);
-                } catch (err) {
-                    showToast("复制失败");
-                }
-                document.body.removeChild(textarea);
-            };
+                    document.body.removeChild(textarea);
+                });
+            }, []);
 
             const filteredData = useMemo(() => {
-                return dnsData.filter(item => {
+                return DNS_DATA.filter(item => {
                     const matchesCategory = filter === "all"
                         ? true
                         : filter === "ipv6"
@@ -370,210 +533,120 @@
                 });
             }, [filter, search]);
 
-            const categories = [
-                { id: "all", label: "全部", icon: "layers" },
-                { id: "domestic", label: "国内加速", icon: "zap" },
-                { id: "international", label: "国际畅通", icon: "globe" },
-                { id: "security", label: "安全防护", icon: "shield" },
-                { id: "ipv6", label: "IPv6", icon: "network" },
-            ];
-
             return (
-                <div className="min-h-screen flex flex-col">
-                    {/* VS Code Activity Bar + Sidebar concept simplified to Header */}
-                    <div className="bg-[#252526] border-b border-[#333333] px-4 py-3 sticky top-0 z-30 shadow-md">
-                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-                            <div className="flex items-center gap-3 w-full md:w-auto">
-                                <div className="bg-[#007acc] p-1.5 rounded-sm">
-                                    <Icon name="server" size={20} className="text-white" />
+                <div className="flex h-screen w-screen overflow-hidden bg-[#1e1e1e] text-[#cccccc]">
+                    {/* 1. Left Sidebar (Activity Bar) */}
+                    <ActivityBar />
+
+                    {/* 2. Main Content Area */}
+                    <div className="flex-1 flex flex-col h-full min-w-0">
+                        
+                        {/* Header */}
+                        <header className="h-12 bg-[#252526] border-b border-[#252526] flex items-center justify-between px-4 shrink-0">
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="text-[#858585]">Public DNS Hub</span>
+                                <span className="text-[#858585]">\</span>
+                                <span className="font-medium text-white">{filter === 'all' ? 'Overview' : filter}</span>
+                            </div>
+                            
+                            {/* Center Search - Like VS Code Command Palette */}
+                            <div className="hidden md:block relative w-1/3 max-w-md group z-20">
+                                <div className="absolute inset-0 bg-[#3c3c3c] rounded-md -z-10 group-focus-within:ring-1 ring-[#007acc] transition-all"></div>
+                                <div className="flex items-center px-2">
+                                    <Icon name="search" size={14} className="text-[#858585]" />
+                                    <input 
+                                        type="text" 
+                                        className="w-full bg-transparent border-none outline-none text-sm text-[#cccccc] placeholder-[#858585] py-1.5 px-2"
+                                        placeholder="Search services (Ctrl+F)"
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                    />
                                 </div>
-                                <h1 className="text-lg font-bold tracking-wide text-[#cccccc]">
-                                    DNS<span className="text-[#007acc]">_HUB</span>
-                                </h1>
                             </div>
 
-                            {/* Search (Command Palette Style) */}
-                            <div className="relative w-full md:w-96 group">
-                                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#858585] group-focus-within:text-[#007acc]">
-                                    <Icon name="search" size={16} />
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="搜索 DNS 服务商..."
-                                    className="w-full bg-[#3c3c3c] text-[#cccccc] pl-9 pr-3 py-1.5 text-sm rounded-sm border border-[#3c3c3c] focus:outline-none focus:border-[#007acc] focus:ring-1 focus:ring-[#007acc] placeholder-[#858585] transition-all"
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    onClick={() => setModalOpen(true)}
+                                    className="flex items-center gap-2 text-xs bg-[#007acc] hover:bg-[#0062a3] text-white px-3 py-1.5 rounded-sm transition shadow-sm"
+                                >
+                                    <Icon name="play" size={12} fill="currentColor" />
+                                    <span>Setup Guide</span>
+                                </button>
+                            </div>
+                        </header>
+
+                        {/* Tabs / Filter Bar (Secondary Header) */}
+                        <div className="flex overflow-x-auto bg-[#1e1e1e] border-b border-[#252526] scrollbar-hide shrink-0">
+                             {CATEGORIES.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setFilter(cat.id)}
+                                    className={`flex items-center gap-2 px-4 py-2.5 text-xs border-r border-[#252526] transition-all min-w-max ${filter === cat.id
+                                            ? "bg-[#1e1e1e] text-white border-t border-t-[#007acc]"
+                                            : "bg-[#2d2d2d] text-[#969696] hover:bg-[#252526] border-t border-t-transparent"
+                                        }`}
+                                >
+                                    <Icon name={cat.icon} size={14} className={filter === cat.id ? "text-[#fac863]" : ""} />
+                                    {cat.label}
+                                    {filter === cat.id && (
+                                        <span className="ml-2 text-[10px] bg-[#333333] px-1.5 rounded-full text-[#cccccc]">{filteredData.length}</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Scrollable Grid Area */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 relative">
+                            {/* Mobile Search (Visible only on small screens) */}
+                            <div className="md:hidden mb-4 relative">
+                                <Icon name="search" size={16} className="absolute left-3 top-2.5 text-[#858585]" />
+                                <input 
+                                    type="text" 
+                                    className="w-full bg-[#252526] border border-[#3c3c3c] text-[#cccccc] py-2 pl-9 pr-3 text-sm rounded-sm focus:border-[#007acc] outline-none"
+                                    placeholder="Search..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                 />
                             </div>
 
-                            <button
-                                onClick={() => setModalOpen(true)}
-                                className="hidden md:flex items-center gap-2 text-xs text-[#cccccc] hover:text-white px-3 py-1.5 hover:bg-[#3c3c3c] rounded-sm transition"
-                            >
-                                <Icon name="book-open" size={14} />
-                                <span className="font-code">README.md</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Main Content Area */}
-                    <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6">
-
-                        {/* Tabs / Filter Bar */}
-                        <div className="flex overflow-x-auto pb-4 gap-1 mb-2 scrollbar-hide border-b border-[#333333]">
-                            {categories.map(cat => (
-                                <button
-                                    key={cat.id}
-                                    onClick={() => setFilter(cat.id)}
-                                    className={`flex items-center gap-2 px-4 py-2 text-sm transition-all border-t-2 ${filter === cat.id
-                                            ? "bg-[#1e1e1e] text-white border-[#007acc]"
-                                            : "bg-transparent text-[#969696] border-transparent hover:text-[#cccccc] hover:bg-[#2a2d2e]"
-                                        }`}
-                                >
-                                    <Icon name={cat.icon} size={14} />
-                                    {cat.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Breadcrumbs / Info */}
-                        <div className="text-xs font-code text-[#6a9955] mb-6 flex items-center gap-2">
-                            <span>src</span>
-                            <span>/</span>
-                            <span>providers</span>
-                            <span>/</span>
-                            <span>{filter}.json</span>
-                            <span className="text-[#858585] ml-2">// 找到 {filteredData.length} 项</span>
-                        </div>
-
-                        {/* Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {filteredData.map(dns => (
-                                <div key={dns.id} className="bg-[#252526] p-4 rounded-sm border border-[#333333] card-hover transition-all duration-200 group relative flex flex-col h-full">
-                                    {/* Decoration Line */}
-                                    <div className={`absolute top-0 left-0 w-1 h-full rounded-l-sm ${dns.category === 'domestic' ? 'bg-[#dcdcaa]' :
-                                            dns.category === 'security' ? 'bg-[#c586c0]' : 'bg-[#569cd6]'
-                                        }`}></div>
-
-                                    <div className="pl-3 mb-4 flex justify-between items-start">
-                                        <div>
-                                            <h3 className="text-lg font-medium text-[#d4d4d4] group-hover:text-white">
-                                                {dns.name}
-                                            </h3>
-                                            <div className="flex gap-2 mt-2 flex-wrap">
-                                                {dns.tags.map(tag => (
-                                                    <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#3c3c3c] text-[#4ec9b0] font-code border border-[#454545]">
-                                                        {tag}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="text-[#858585]">
-                                            <Icon name={dns.category === 'domestic' ? 'zap' : dns.category === 'security' ? 'shield' : 'globe'} size={18} />
-                                        </div>
-                                    </div>
-
-                                    <div className="pl-3 mb-6 flex-grow">
-                                        <p className="text-sm text-[#858585] leading-relaxed">
-                                            <span className="text-[#569cd6] font-code mr-1">const</span>
-                                            <span className="text-[#dcdcaa] font-code mr-1">desc</span>
-                                            <span className="text-[#d4d4d4] font-code mr-1">=</span>
-                                            <span className="syntax-string">"{dns.desc}"</span>;
-                                        </p>
-                                    </div>
-
-                                    <div className="pl-3 space-y-3">
-                                        {/* IPv4 Block */}
-                                        <div className="space-y-1">
-                                            <div className="flex items-center justify-between text-xs text-[#858585] mb-1">
-                                                <span className="font-code">IPv4</span>
-                                            </div>
-                                            {[dns.ipv4_1, dns.ipv4_2].filter(Boolean).map((ip, idx) => (
-                                                <div key={idx} className="flex items-center bg-[#1e1e1e] border border-[#3c3c3c] rounded-sm group/ip hover:border-[#569cd6] transition-colors">
-                                                    <div className="px-3 py-1.5 font-code text-sm text-[#b5cea8] flex-grow">
-                                                        {ip}
-                                                    </div>
-                                                    <button
-                                                        onClick={() => copyToClipboard(ip)}
-                                                        className="px-3 py-1.5 text-[#858585] hover:text-white hover:bg-[#333333] border-l border-[#3c3c3c] transition-colors"
-                                                        title="复制"
-                                                    >
-                                                        <Icon name="copy" size={14} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {/* IPv6 Block */}
-                                        {(dns.ipv6_1 || dns.ipv6_2) && (
-                                            <div className="space-y-1 mt-2">
-                                                <div className="flex items-center justify-between text-xs text-[#858585] mb-1">
-                                                    <span className="font-code">IPv6</span>
-                                                </div>
-                                                {[dns.ipv6_1, dns.ipv6_2].filter(Boolean).map((ip, idx) => (
-                                                    <div key={idx} className="flex items-center bg-[#1e1e1e] border border-[#3c3c3c] rounded-sm group/ip hover:border-[#569cd6] transition-colors mb-1 last:mb-0">
-                                                        <div className="px-3 py-1.5 font-code text-[11px] text-[#4ec9b0] flex-grow truncate" title={ip}>
-                                                            {ip}
-                                                        </div>
-                                                        <button
-                                                            onClick={() => copyToClipboard(ip)}
-                                                            className="px-3 py-1.5 text-[#858585] hover:text-white hover:bg-[#333333] border-l border-[#3c3c3c] flex-shrink-0 transition-colors"
-                                                            title="复制"
-                                                        >
-                                                            <Icon name="copy" size={14} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {filteredData.length === 0 && (
-                            <div className="flex flex-col items-center justify-center py-20 text-[#6b6b6b]">
-                                <Icon name="search-x" size={48} className="mb-4 opacity-50" />
-                                <p className="text-lg">工作区中未找到结果</p>
-                                <button onClick={() => { setFilter('all'); setSearch('') }} className="mt-4 text-[#007acc] hover:underline text-sm font-code">
-                                    重置筛选条件
-                                </button>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-8">
+                                {filteredData.map(dns => (
+                                    <DNSCard 
+                                        key={dns.id} 
+                                        dns={dns} 
+                                        onCopy={copyToClipboard} 
+                                        highlight={search}
+                                    />
+                                ))}
                             </div>
-                        )}
+
+                            {filteredData.length === 0 && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-[#6b6b6b]">
+                                    <Icon name="telescope" size={64} className="mb-4 opacity-20" />
+                                    <p className="text-lg font-medium">No results found for "{search}"</p>
+                                    <button onClick={() => { setFilter('all'); setSearch('') }} className="mt-4 text-[#007acc] hover:underline text-sm font-code">
+                                        Clear Filters
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Status Bar */}
+                        <StatusBar count={filteredData.length} />
                     </div>
 
-                    {/* Footer / Status Bar */}
-                    <div className="bg-[#007acc] text-white text-xs py-1 px-4 flex justify-between items-center">
-                        <div className="flex items-center gap-4">
-                            <span className="flex items-center gap-1 hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer">
-                                <Icon name="git-branch" size={12} />
-                                <span>main</span>
-                            </span>
-                            <span className="hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer">
-                                0 errors, 0 warnings
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <span className="hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer">Ln {filteredData.length}, Col 1</span>
-                            <span className="hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer">UTF-8</span>
-                            <span className="hover:bg-white/10 px-2 py-0.5 rounded cursor-pointer">JavaScript React</span>
-                            <Icon name="bell" size={12} className="hover:bg-white/10 rounded cursor-pointer" />
-                        </div>
-                    </div>
-
-                    <Toast message={toast.msg} visible={toast.show} />
-
+                    {/* Tutorials Modal */}
                     <Modal
                         isOpen={modalOpen}
                         onClose={() => setModalOpen(false)}
-                        title="Configuration_Guide.md"
+                        title="README.md - Configuration Guide"
                     >
-                        <div className="flex bg-[#252526] border-b border-[#333333]">
-                            {Object.keys(tutorials).map(key => (
+                         <div className="flex bg-[#252526] border-b border-[#333333] sticky top-0 z-10">
+                            {Object.keys(TUTORIALS).map(key => (
                                 <button
                                     key={key}
-                                    onClick={() => setActiveTab(key)}
-                                    className={`px-6 py-3 text-sm font-code border-t-2 transition-colors ${activeTab === key
+                                    onClick={() => setTutorialTab(key)}
+                                    className={`px-6 py-3 text-xs font-code border-t-2 transition-colors ${tutorialTab === key
                                             ? "bg-[#1e1e1e] text-[#d4d4d4] border-[#007acc]"
                                             : "bg-[#2d2d2d] text-[#858585] border-transparent hover:bg-[#2a2d2e]"
                                         }`}
@@ -582,19 +655,22 @@
                                 </button>
                             ))}
                         </div>
-                        <div className="p-6 bg-[#1e1e1e] min-h-[300px]">
-                            <div className="font-code text-sm leading-7">
-                                {tutorials[activeTab].split('\n').map((line, i) => (
-                                    <div key={i} className="flex">
-                                        <span className="text-[#858585] w-8 select-none text-right mr-4">{i + 1}</span>
-                                        <span className="text-[#cccccc] whitespace-pre-wrap">{line}</span>
+                        <div className="p-6 bg-[#1e1e1e] min-h-[300px] font-code text-sm leading-7">
+                             <div className="flex flex-col gap-1">
+                                {TUTORIALS[tutorialTab].split('\n').map((line, i) => (
+                                    <div key={i} className="flex group hover:bg-[#2a2d2e] -mx-2 px-2 rounded-sm">
+                                        <span className="text-[#6e7681] w-8 text-right mr-6 select-none">{i + 1}</span>
+                                        <span className="text-[#cccccc]">{line}</span>
                                     </div>
                                 ))}
                             </div>
-                            <div className="mt-8 pt-4 border-t border-[#333333]">
-                                <p className="text-[#6a9955] font-code text-xs">
-                                    // Tip: Run `ipconfig /flushdns` in terminal after changes.
-                                </p>
+                             <div className="mt-8 pt-4 border-t border-[#333333] opacity-80">
+                                <div className="flex gap-2">
+                                    <span className="text-[#6e7681] w-8 text-right mr-6 select-none">{TUTORIALS[tutorialTab].split('\n').length + 1}</span>
+                                    <p className="text-[#6a9955]">
+                                        // Tip: Remember to flush DNS cache after changing settings.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </Modal>
